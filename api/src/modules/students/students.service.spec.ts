@@ -5,6 +5,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { ConflictException, NotFoundException } from '@nestjs/common';
 
 import { StudentsService } from './students.service';
+import { SortOrder, StudentSortFields } from '../../shared/enums';
 import { UsersRepository } from '../../shared/database/repositories/users.repositories';
 import { CreateStudentDto, FindAllStudentsDto, UpdateStudentDto } from './dto';
 
@@ -18,6 +19,7 @@ describe('StudentsService', () => {
     create: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
+    count: jest.fn(),
   };
 
   beforeEach(async () => {
@@ -189,10 +191,17 @@ describe('StudentsService', () => {
 
     it('should return all active students', async () => {
       mockUsersRepository.findMany.mockResolvedValue(mockStudents);
+      mockUsersRepository.count.mockResolvedValue(mockStudents.length);
 
       const result = await service.findAllStudents();
 
-      expect(result).toEqual(mockStudents);
+      expect(result.items).toEqual(mockStudents);
+      expect(result.meta).toEqual({
+        currentPage: 1,
+        pageSize: 10,
+        totalCount: 3,
+        totalPages: 1,
+      });
       expect(mockUsersRepository.findMany).toHaveBeenCalledWith({
         where: {
           role: UserRole.STUDENT,
@@ -207,21 +216,27 @@ describe('StudentsService', () => {
           createdAt: true,
           updatedAt: true,
         },
+        orderBy: [{ createdAt: 'desc' }],
+        skip: 0,
+        take: 10,
       });
     });
 
     it('should return empty array when no students exist', async () => {
       mockUsersRepository.findMany.mockResolvedValue([]);
+      mockUsersRepository.count.mockResolvedValue(0);
 
       const result = await service.findAllStudents();
 
-      expect(result).toEqual([]);
+      expect(result.items).toEqual([]);
+      expect(result.meta.totalCount).toBe(0);
       expect(mockUsersRepository.findMany).toHaveBeenCalled();
     });
 
     it('should filter by name (case insensitive partial match)', async () => {
       const filters: FindAllStudentsDto = { name: 'silva' };
       mockUsersRepository.findMany.mockResolvedValue([mockStudents[0]]);
+      mockUsersRepository.count.mockResolvedValue(1);
 
       await service.findAllStudents(filters);
 
@@ -247,12 +262,16 @@ describe('StudentsService', () => {
           createdAt: true,
           updatedAt: true,
         },
+        orderBy: [{ createdAt: 'desc' }],
+        skip: 0,
+        take: 10,
       });
     });
 
     it('should filter by email (case insensitive partial match)', async () => {
       const filters: FindAllStudentsDto = { email: 'alice' };
       mockUsersRepository.findMany.mockResolvedValue([mockStudents[0]]);
+      mockUsersRepository.count.mockResolvedValue(1);
 
       await service.findAllStudents(filters);
 
@@ -278,12 +297,16 @@ describe('StudentsService', () => {
           createdAt: true,
           updatedAt: true,
         },
+        orderBy: [{ createdAt: 'desc' }],
+        skip: 0,
+        take: 10,
       });
     });
 
     it('should filter by CPF (exact match, formatted)', async () => {
       const filters: FindAllStudentsDto = { cpf: '111.111.111-11' };
       mockUsersRepository.findMany.mockResolvedValue([mockStudents[0]]);
+      mockUsersRepository.count.mockResolvedValue(1);
 
       await service.findAllStudents(filters);
 
@@ -306,12 +329,16 @@ describe('StudentsService', () => {
           createdAt: true,
           updatedAt: true,
         },
+        orderBy: [{ createdAt: 'desc' }],
+        skip: 0,
+        take: 10,
       });
     });
 
     it('should filter by CPF (unformatted input should be formatted)', async () => {
       const filters: FindAllStudentsDto = { cpf: '11111111111' };
       mockUsersRepository.findMany.mockResolvedValue([mockStudents[0]]);
+      mockUsersRepository.count.mockResolvedValue(1);
 
       await service.findAllStudents(filters);
 
@@ -334,12 +361,16 @@ describe('StudentsService', () => {
           createdAt: true,
           updatedAt: true,
         },
+        orderBy: [{ createdAt: 'desc' }],
+        skip: 0,
+        take: 10,
       });
     });
 
     it('should filter by RA (exact match)', async () => {
       const filters: FindAllStudentsDto = { ra: 'RA001' };
       mockUsersRepository.findMany.mockResolvedValue([mockStudents[0]]);
+      mockUsersRepository.count.mockResolvedValue(1);
 
       await service.findAllStudents(filters);
 
@@ -362,6 +393,9 @@ describe('StudentsService', () => {
           createdAt: true,
           updatedAt: true,
         },
+        orderBy: [{ createdAt: 'desc' }],
+        skip: 0,
+        take: 10,
       });
     });
 
@@ -394,12 +428,14 @@ describe('StudentsService', () => {
       expect(errors.length).toBeGreaterThan(0);
       expect(errors[0].property).toBe('sortBy');
     });
+
     it('should sort by single field ascending', async () => {
       const filters: FindAllStudentsDto = {
-        sortBy: ['name'],
-        sortDirection: ['asc'],
+        sortBy: [StudentSortFields.NAME],
+        sortDirection: [SortOrder.ASC],
       };
-      mockUsersRepository.findMany.mockResolvedValue(mockStudents[0]);
+      mockUsersRepository.findMany.mockResolvedValue(mockStudents);
+      mockUsersRepository.count.mockResolvedValue(mockStudents.length);
 
       await service.findAllStudents(filters);
 
@@ -408,16 +444,19 @@ describe('StudentsService', () => {
           role: UserRole.STUDENT,
         },
         select: expect.any(Object),
-        orderBy: [{ name: 'asc' }],
+        orderBy: [{ name: SortOrder.ASC }],
+        skip: 0,
+        take: 10,
       });
     });
 
     it('should sort by single field descending', async () => {
       const filters: FindAllStudentsDto = {
-        sortBy: ['email'],
-        sortDirection: ['desc'],
+        sortBy: [StudentSortFields.EMAIL],
+        sortDirection: [SortOrder.DESC],
       };
       mockUsersRepository.findMany.mockResolvedValue(mockStudents);
+      mockUsersRepository.count.mockResolvedValue(mockStudents.length);
 
       await service.findAllStudents(filters);
 
@@ -427,15 +466,18 @@ describe('StudentsService', () => {
         },
         select: expect.any(Object),
         orderBy: [{ email: 'desc' }],
+        skip: 0,
+        take: 10,
       });
     });
 
     it('should sort by multiple fields with different directions', async () => {
       const filters: FindAllStudentsDto = {
-        sortBy: ['name', 'email'],
-        sortDirection: ['asc', 'desc'],
+        sortBy: [StudentSortFields.NAME, StudentSortFields.EMAIL],
+        sortDirection: [SortOrder.ASC, SortOrder.DESC],
       };
       mockUsersRepository.findMany.mockResolvedValue(mockStudents);
+      mockUsersRepository.count.mockResolvedValue(mockStudents.length);
 
       await service.findAllStudents(filters);
 
@@ -445,6 +487,8 @@ describe('StudentsService', () => {
         },
         select: expect.any(Object),
         orderBy: [{ name: 'asc' }, { email: 'desc' }],
+        skip: 0,
+        take: 10,
       });
     });
   });

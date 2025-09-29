@@ -84,7 +84,9 @@
       ".*\\.module\\.ts$",
       ".*\\.guard\\.ts$",
       "src/shared/config/.*",
-      "src/shared/database/.*"
+      "src/shared/database/.*",
+      "src/shared/interceptors/.*",
+      "src/shared/interfaces/.*"
     ],
     "collectCoverageFrom": [
       "**/*.(t|j)s"
