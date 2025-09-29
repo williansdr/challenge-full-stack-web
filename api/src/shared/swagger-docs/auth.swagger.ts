@@ -80,3 +80,32 @@ export const SigninResponses = {
     },
   } as ApiResponseOptions,
 };
+
+export const MeResponses = {
+  '200': {
+    status: 200,
+    description: 'Current user information',
+    schema: {
+      example: {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        name: 'Admin Name',
+        email: 'admin@example.com',
+        cpf: '123.456.789-00',
+        ra: 'ADM202401',
+        role: 'ADMIN',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-01T00:00:00.000Z',
+      },
+    },
+  } as ApiResponseOptions,
+  '401': {
+    status: 401,
+    description: 'Unauthorized - Invalid or missing token',
+    schema: {
+      example: {
+        message: 'Unauthorized',
+        statusCode: 401,
+      },
+    },
+  } as ApiResponseOptions,
+};
